@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/default/carbon-c-relay
+EnvironmentFile=/etc/sysconfig/carbon-c-relay
 PIDFile=$PIDFILE
 User=carbon
 ExecStart=/usr/sbin/carbon-c-relay $OPTS

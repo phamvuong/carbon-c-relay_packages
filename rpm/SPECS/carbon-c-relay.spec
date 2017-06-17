@@ -1,5 +1,5 @@
 %define name     carbon-c-relay
-%define version 1.11
+%define version  1.11
 
 Name:            %{name}           
 Version:         %{version}
@@ -10,9 +10,8 @@ License:         Apache 2.0
 URL:             https://github.com/grobian/carbon-c-relay
 Source0:         %{name}-%{version}.tar.gz
 ExcludeArch:     s390 s390x
-Requires(post):  chkconfig
-Requires(preun): chkconfig
-Requires(preun): initscripts
+BuildRequires  : systemd
+%{?systemd_requires} 
 
 %description
 Enhanced C implementation of Carbon relay, aggregator and rewriter
@@ -35,37 +34,32 @@ make dist DISTDIR=%{_sourcedir}
 make %{?_smp_mflags}
 
 %install
-rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT/etc/carbon
-install -d $RPM_BUILD_ROOT/usr/sbin
-make install PREFIX=$RPM_BUILD_ROOT/usr DESTDIR=$RPM_BUILD_ROOT/etc/carbon
-install -m 644 %{_topdir}/carbon-c-relay.conf $RPM_BUILD_ROOT/etc/carbon/carbon-c-relay.conf
-install -D -m 644 %{_topdir}/carbon-c-relay.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/carbon-c-relay
-install -D -m 755 %{_topdir}/carbon-c-relay.init $RPM_BUILD_ROOT/etc/rc.d/init.d/carbon-c-relay
+rm -rf %{buildroot}
+install -d %{buildroot}%{_sysconfdir}/carbon
+install -d %{buildroot}/usr/sbin
+make install PREFIX=%{buildroot}/usr DESTDIR=%{buildroot}%{_sysconfdir}/carbon
+install -m 644 %{_topdir}/%{name}.conf %{buildroot}%{_sysconfdir}/carbon/%{name}.conf
+install -D -m 644 %{_topdir}/%{name}.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/%{name}
+install -D -m 755 %{_topdir}/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 %post
-# This adds the proper /etc/rc*.d links for the script
 if [ $1 -eq 1 ]; then
-        chkconfig --add carbon-c-relay
+        %systemd_post %{name}.service
         useradd -d /tmp -M -s /bin/false --system -G daemon carbon
 fi
 
 %preun
-if [ $1 -eq 0 ]; then
-	service carbon-c-relay stop >/dev/null 2>&1
-   	chkconfig --del carbon-c-relay
-fi
+%systemd_preun %{name}.service
 
 %files
-%doc $RPM_BUILD_DIR/src/README.md
-%{_sbindir}/carbon-c-relay
-%attr(755, root, root) /etc/rc.d/init.d/carbon-c-relay
-%attr(644, root, root) %config(noreplace) %{_sysconfdir}/carbon/carbon-c-relay.conf
-%attr(644, root, root) %config(noreplace) %{_sysconfdir}/sysconfig/carbon-c-relay
+%{_sbindir}/%{name}
+%attr(755, root, root) %{_unitdir}/%{name}.service
+%attr(644, root, root) %config(noreplace) %{_sysconfdir}/carbon/%{name}.conf
+%attr(644, root, root) %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 
 %changelog
-* Wed Jan 21 2015 Jose Riguera <jriguera@gmail.com>
+* Mon Jun 19 2017 Vuong Lam Pham <vuong.pham@gooddata.com>
 - %{name} %{version}
